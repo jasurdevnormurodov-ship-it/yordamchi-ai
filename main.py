@@ -1,5 +1,3 @@
-from types import NoneType
-
 import httpx
 import streamlit as st
 from mistralai import Mistral
@@ -201,5 +199,3 @@ except httpx.ConnectError:
     st.write('Iltimos internetga ulaning!')
 except Exception as e:
     st.error(f'Xatolik yuz berdi: {e}')
-except NoneType as n:
-    st.write('AI ba\'zi savollarga to\'gri javob bermaydi, iltimos javoblarni tekshiring !')
