@@ -1,3 +1,4 @@
+# from types import None
 import httpx
 import streamlit as st
 from mistralai import Mistral
@@ -217,3 +218,4 @@ except httpx.ConnectError:
     st.error("Internetga ulaning")
 except Exception as e:
     st.error(f"Xatolik: {e}")
+
