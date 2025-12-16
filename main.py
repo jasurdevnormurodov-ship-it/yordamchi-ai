@@ -1,14 +1,30 @@
-from types import NoneType
-
 import httpx
 import streamlit as st
 from mistralai import Mistral
 import time
 import re
 import pandas as pd
-
 import base64
+import yordamchi_mistral_ai
 
+# ==================== PAGE CONFIG (HAR DOIM ENG YUQORIDA) ====================
+st.set_page_config(
+    page_title="Yordamchi AI",
+    layout="wide",                     # 🔥 WIDE MODE DOIM YOQIQ
+    initial_sidebar_state="collapsed",
+    page_icon='artbreeder-poser.ico'
+)
+
+# ==================== STREAMLIT UI NI YASHIRISH ====================
+st.markdown("""
+<style>
+header {visibility: hidden;}              /* Fork / Deploy */
+footer {visibility: hidden;}               /* Streamlit footer */
+[data-testid="stToolbar"] {visibility: hidden;}  /* Past o‘ng ikon */
+</style>
+""", unsafe_allow_html=True)
+
+# ==================== BACKGROUND IMAGE ====================
 def add_bg_from_local(image_file):
     with open(image_file, "rb") as f:
         encoded = base64.b64encode(f.read()).decode()
@@ -24,7 +40,7 @@ def add_bg_from_local(image_file):
         unsafe_allow_html=True
     )
 
-
+# ==================== JAVOB FORMATLASH ====================
 # 🔧 Javobni formatlab chiqaruvchi funksiya
 def render_reply(reply: str):
     lines = reply.splitlines()
@@ -139,53 +155,52 @@ def render_reply(reply: str):
         flush_table()
 
 
+# ==================== MAIN APP ====================
 try:
-    # 🔑 API ma'lumotlari
     api_key = "VwcSrQywHXQ1Gjh4htEG5LgwqvpzJdJc"
     model = "mistral-medium-latest"
-
-    # 🔌 Mistral API bilan bog'lanish
     client = Mistral(api_key=api_key)
 
-    # 📋 Streamlit sozlamalari
-    st.set_page_config(page_title="Yordamchi AI", layout="centered", page_icon='artbreeder-poser.ico')
     st.title("💬 Yordamchi AI")
 
-    # 💾 Chat tarixini saqlash
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "system", "content": "Your name is Yordamchi AI, you were created by Normurodov Jasur Ibragimovich"}
+            {"role": "system", "content": "Your name is Yordamchi AI, you were created by SAITUG (Scienstic and informational technologyof university-group,  Ilm-fan va Axborot Texnologiyalariga yo'naltirilgan universitet-guruh)"}
         ]
 
-    # 📜 Oldingi xabarlarni chiqarish
-    for msg in st.session_state.messages[1:]:  # system xabarni tashlab
+    for msg in st.session_state.messages[1:]:
         with st.chat_message(msg["role"]):
             render_reply(msg["content"])
 
-    # 💬 Foydalanuvchi inputi
     user_input = st.chat_input("Savolingizni yozing...")
 
     if user_input:
-        # ➕ Foydalanuvchi xabarini qo'shish
         st.session_state.messages.append({"role": "user", "content": user_input})
-
         with st.chat_message("user"):
             st.markdown(user_input)
+        chat_count = len(st.session_state.messages) - 1  # system message-ni hisoblamaymiz
 
-        # 🤖 AI javobini olish
+        if chat_count > 5:
+            with st.modal("⚠️ Takliflar"):
+                st.write("Siz 5 martadan ko‘p savol-javob qildingiz. Quyidagi takliflarni ko‘rib chiqing:")
+                st.markdown("""
+                            - Yangi chat oching  
+                            - Savolni qisqartiring  
+                            - PRO rejimga o‘ting  
+                            """)
+                st.button("Yopish")
+            # ⭐⭐⭐ QO‘SHILGAN QISM TUGADI ⭐⭐⭐
         response = client.chat.complete(
             model=model,
             messages=st.session_state.messages
         )
-        reply = response.choices[0].message.content
 
-        # ➕ Javobni qo'shish
+        reply = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
-        # ⌛️ Formatlangan javobni chiqarish
         with st.chat_message("assistant"):
-            blocks = render_reply(reply)  # oddiy matnlarni qaytaradi
-            for block in blocks:
+            blocks = lambda x:render_reply(x)
+            for block in blocks(reply):
                 placeholder = st.empty()
                 animated_text = ""
                 show_dot = True
@@ -197,9 +212,8 @@ try:
                     time.sleep(0.02)
                 placeholder.markdown(animated_text)
 
+
 except httpx.ConnectError:
-    st.write('Iltimos internetga ulaning!')
+    st.error("Internetga ulaning")
 except Exception as e:
-    st.error(f'Xatolik yuz berdi: {e}')
-except NoneType as n:
-    st.write('AI ba\'zi savollarga to\'gri javob bermaydi, iltimos javoblarni tekshiring !')
+    st.error(f"Xatolik: {e}")
