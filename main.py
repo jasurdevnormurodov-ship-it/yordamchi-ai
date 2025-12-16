@@ -41,6 +41,18 @@ def add_bg_from_local(image_file):
         unsafe_allow_html=True
     )
 
+# ==================== SESSION STATE ====================
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {
+            "role": "system",
+            "content": "Your name is Yordamchi AI. You were created by SAITUG."
+        }
+    ]
+
+if "is_pro" not in st.session_state:
+    st.session_state.is_pro = False
+
 # ==================== JAVOB FORMATLASH ====================
 # 🔧 Javobni formatlab chiqaruvchi funksiya
 def render_reply(reply: str):
@@ -155,6 +167,42 @@ def render_reply(reply: str):
     if table_buf:
         flush_table()
 
+# ==================== TYPING ANIMATION ====================
+def type_writer(text, delay=0.02):
+    placeholder = st.empty()
+    current_text = ""
+
+    for char in text:
+        current_text += char
+        placeholder.markdown(current_text + "▌")
+        time.sleep(delay)
+
+    placeholder.markdown(current_text)
+
+
+# ==================== PRO MODAL ====================
+@st.dialog("⚠️ Cheklovga yetdingiz")
+def pro_dialog():
+    st.warning("Siz 5 martadan ko‘p savol berdingiz.")
+    st.markdown("""
+    **Takliflar:**
+    - 🆕 Yangi chat ochish
+    - ✂️ Savolni qisqartirish
+    - ⭐ PRO rejimga o‘tish (cheksiz)
+    """)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("🔓 PRO ni faollashtirish"):
+            st.session_state.is_pro = True
+            st.success("PRO faollashtirildi!")
+            time.sleep(1)
+            st.rerun()
+
+    with col2:
+        if st.button("❌ Yopish"):
+            st.rerun()
 
 # ==================== MAIN APP ====================
 try:
@@ -179,43 +227,41 @@ try:
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
-        chat_count = len(st.session_state.messages) - 1  # system message-ni hisoblamaymiz
+        if user_input:
+        chat_count = len(st.session_state.messages) - 1
 
-        if chat_count > 5:
-            with st.modal("⚠️ Takliflar"):
-                st.write("Siz 5 martadan ko‘p savol-javob qildingiz. Quyidagi takliflarni ko‘rib chiqing:")
-                st.markdown("""
-                            - Yangi chat oching  
-                            - Savolni qisqartiring  
-                            - PRO rejimga o‘ting  
-                            """)
-                st.button("Yopish")
-            # ⭐⭐⭐ QO‘SHILGAN QISM TUGADI ⭐⭐⭐
+        # ❌ LIMIT
+        if chat_count >= 5 and not st.session_state.is_pro:
+            pro_dialog()
+            st.stop()
+
+        # USER MESSAGE
+        st.session_state.messages.append(
+            {"role": "user", "content": user_input}
+        )
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        # MISTRAL API
+        client = Mistral(api_key=api_key)
         response = client.chat.complete(
-            model=model,
+            model="mistral-medium-latest",
             messages=st.session_state.messages
         )
 
         reply = response.choices[0].message.content
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+        st.session_state.messages.append(
+            {"role": "assistant", "content": reply}
+        )
 
+        # ASSISTANT (typing animation)
         with st.chat_message("assistant"):
-            blocks = lambda x:render_reply(x)
-            for block in blocks(reply):
-                placeholder = st.empty()
-                animated_text = ""
-                show_dot = True
-                for char in block:
-                    animated_text += char
-                    dot = "⚫" if show_dot else "&nbsp;"
-                    placeholder.markdown(animated_text + dot, unsafe_allow_html=True)
-                    show_dot = not show_dot
-                    time.sleep(0.02)
-                placeholder.markdown(animated_text)
-
+            type_writer(reply)
 
 except httpx.ConnectError:
-    st.error("Internetga ulaning")
+    st.error("Sizda tarmog' faolligi mavjud emas, Iltimos, Internetga, WiFiga yoki boshqa tarmoqqa ulaning!")
 except Exception as e:
     st.error(f"Xatolik: {e}")
+# except Nonetype as N:
+    st.error(f"Iltioms, savollaringizni javobini Google, Wikipedia yoki shu kabi saytlar yoki dasturlardan tekshiring, xato javob berish ehtimoli mavjud !")
 
