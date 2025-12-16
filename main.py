@@ -228,7 +228,7 @@ try:
         with st.chat_message("user"):
             st.markdown(user_input)
         if user_input:
-        chat_count = len(st.session_state.messages) - 1
+            chat_count = len(st.session_state.messages) - 1
 
         # ❌ LIMIT
         if chat_count >= 5 and not st.session_state.is_pro:
@@ -264,4 +264,5 @@ except Exception as e:
     st.error(f"Xatolik: {e}")
 # except Nonetype as N:
     st.error(f"Iltioms, savollaringizni javobini Google, Wikipedia yoki shu kabi saytlar yoki dasturlardan tekshiring, xato javob berish ehtimoli mavjud !")
+
 
